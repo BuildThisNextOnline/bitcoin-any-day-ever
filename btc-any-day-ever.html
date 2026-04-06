@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What If You Bought Bitcoin On Any Day Ever?</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #f0eeea;
+    --ink-soft: #b0ada6;
+    --ink-muted: #6a6760;
+    --ink-faint: #3a3835;
+    --paper: #111111;
+    --paper-warm: #1a1917;
+    --paper-card: #1c1b19;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --accent: #e06020;
+    --accent-light: rgba(224,96,32,0.12);
+    --green: #2da05a;
+    --green-light: rgba(45,160,90,0.12);
+    --red: #cc3333;
+    --red-light: rgba(204,51,51,0.12);
+    --blue: #3a7ab8;
+    --blue-light: rgba(58,122,184,0.12);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* LOADING SCREEN */
+  #loading-screen {
+    position: fixed; inset: 0;
+    background: #111111;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 1000;
+    transition: opacity 0.6s ease;
+  }
+  #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+  .loading-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(24px, 5vw, 40px);
+    color: var(--ink);
+    text-align: center;
+    margin-bottom: 2rem;
+    max-width: 600px;
+    padding: 0 2rem;
+  }
+  .loading-bar-wrap {
+    width: 280px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .loading-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+  .loading-status {
+    font-size: 13px;
+    color: var(--ink-muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .loading-error {
+    margin-top: 1.5rem;
+    font-size: 13px;
+    color: var(--red);
+    text-align: center;
+    max-width: 400px;
+    padding: 0 2rem;
+    display: none;
+  }
+
+  /* ROOT LAYOUT */
+  .page {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* FULL-WIDTH HEADER */
+  .page-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+    background: #0e0e0e;
+    flex-shrink: 0;
+  }
+  .header-left {
+    padding: 1.5rem 2rem;
+    border-right: 1px solid var(--border);
+  }
+  .header-right { }
+
+  /* BODY ROW */
+  .body-row {
+    display: grid;
+    grid-template-columns: 28% 1fr;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    background: #0e0e0e;
+    overflow-y: auto;
+  }
+
+  /* TAB BUTTONS */
+  .tab-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: none;
+    border: none;
+    border-left: 2px solid transparent;
+    padding: 0.5rem 0.7rem;
+    cursor: pointer;
+    text-align: left;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    border-radius: 0 4px 4px 0;
+  }
+  .tab-btn:hover { color: var(--ink); background: rgba(255,255,255,0.04); }
+  .tab-btn.active { color: var(--accent); border-left-color: var(--accent); background: rgba(224,96,32,0.07); }
+
+  /* MAIN CONTENT */
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* TAB PANELS */
+  .tab-panel { display: none; flex-direction: column; flex: 1; padding: 1rem 1.25rem 0.75rem; min-height: 0; overflow: hidden; }
+  .tab-panel.active { display: flex; }
+
+  /* TYPOGRAPHY */
+  .kicker {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(18px, 2vw, 26px);
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    font-weight: 300;
+    margin-bottom: 0.4rem;
+  }
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+  }
+  .meta-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-muted);
+  }
+  .live-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 5px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* STATS GRID — 4x3 with group borders */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) 1fr;
+    height: 100%;
+  }
+  .stat-cell {
+    padding: 0.6rem 0.9rem;
+    border-left: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-cell:nth-child(n+10) { border-bottom: none; }
+
+  /* Group borders — thicker accent borders between the 4 logical clusters */
+  /* Green group: cells 1-3 (row 1) — top border */
+  .stat-cell:nth-child(1),
+  .stat-cell:nth-child(2),
+  .stat-cell:nth-child(3) { border-top: 2px solid rgba(45,160,90,0.5); }
+  /* Red group: cells 4-6 (row 2) — top border */
+  .stat-cell:nth-child(5),
+  .stat-cell:nth-child(6),
+  .stat-cell:nth-child(7) { border-top: 2px solid rgba(204,51,51,0.5); }
+  /* Blue group: cells 7-9 (row 3) — top border */
+  .stat-cell:nth-child(9),
+  .stat-cell:nth-child(10),
+  .stat-cell:nth-child(11) { border-top: 2px solid rgba(58,122,184,0.5); }
+  /* Live market group: col 4, all rows — left border accent */
+  .stat-cell:nth-child(4),
+  .stat-cell:nth-child(8),
+  .stat-cell:nth-child(12) {
+    border-left: 2px solid rgba(224,96,32,0.5);
+    border-top: none;
+  }
+  .stat-cell:nth-child(4) { border-top: 2px solid rgba(224,96,32,0.5); }
+  .stat-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat-value.green { color: var(--green); }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.red { color: var(--red); }
+  .stat-sub { font-size: 10px; color: var(--ink-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* SECTION ELEMENTS */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 0.3rem;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(15px, 1.6vw, 20px);
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+    line-height: 1.25;
+  }
+  .section-body {
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-bottom: 0.6rem;
+    font-weight: 300;
+  }
+  .insight {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 0.6rem 0.85rem;
+    border-radius: 0 5px 5px 0;
+    margin: 0.5rem 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+  .insight strong { color: var(--ink); font-weight: 500; }
+
+  /* CHART */
+  .chart-wrap {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 10px 10px 0 0;
+    padding: 0.75rem 0.75rem 0.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-bottom: none;
+  }
+  .chart-area { position: relative; flex: 1; min-height: 0; }
+
+  /* COMPACT DATA TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+    table-layout: fixed;
+  }
+  .data-table th {
+    padding: 3px 1px;
+    color: var(--ink-muted);
+    font-weight: 500;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .data-table th:first-child { text-align: left; padding-left: 6px; width: 56px; }
+  .data-table td {
+    padding: 3px 1px;
+    color: var(--ink-soft);
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-size: 9px;
+    overflow: hidden;
+  }
+  .data-table td:first-child { text-align: left; padding-left: 6px; color: var(--ink-muted); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table .spacer-col { width: 10px; min-width: 10px; max-width: 10px; padding: 0; border-left: none; }
+
+  /* PROB TABLE (takeaway) */
+  .prob-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .prob-table th { text-align: left; padding: 5px 8px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--border); }
+  .prob-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .prob-table tr:last-child td { border-bottom: none; }
+  .prob-bar-bg { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; width: 80px; }
+  .prob-bar-fill { height: 100%; border-radius: 2px; background: var(--green); }
+  .prob-pct { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .prob-pct.high { color: var(--green); }
+  .prob-pct.mid { color: var(--accent); }
+  .prob-pct.low { color: var(--red); }
+
+  /* HEATMAP */
+  #heatmap-canvas { width: 100%; border-radius: 6px; display: block; cursor: crosshair; }
+  .heatmap-legend { display: flex; align-items: center; gap: 8px; margin-top: 0.4rem; font-size: 11px; color: var(--ink-muted); font-family: 'DM Mono', monospace; }
+  .legend-grad { flex: 1; max-width: 120px; height: 4px; border-radius: 2px; background: linear-gradient(to right, #cc3333, #2a2a2a, #2da05a); }
+
+  /* TOOLTIP */
+  .tooltip-box { position: fixed; background: #0a0a0a; color: #e0ddd8; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-family: 'DM Mono', monospace; pointer-events: none; display: none; z-index: 100; line-height: 1.6; border: 1px solid rgba(255,255,255,0.15); }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border); padding: 0.65rem 2rem; font-size: 11px; color: var(--ink-muted); font-family: 'DM Mono', monospace; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #0e0e0e; flex-shrink: 0; }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 900px) {
+    .page-header { grid-template-columns: 1fr; }
+    .header-left { border-right: none; border-bottom: 1px solid var(--border); }
+    .body-row { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .tab-bar { flex-direction: row; flex-wrap: wrap; }
+    .tab-btn { border-left: none; border-bottom: 2px solid transparent; }
+    .tab-btn.active { border-bottom-color: var(--accent); background: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="loading-title">Calculating the odds of being right about Bitcoin...</div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+  <div class="loading-status" id="loading-status">Connecting to data source...</div>
+  <div class="loading-error" id="loading-error"></div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tooltip-box" id="tooltip"></div>
+
+<!-- MAIN PAGE -->
+<div class="page" id="main-page" style="display:none;">
+
+  <!-- FULL-WIDTH HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="kicker">Zenca — Data Insight</div>
+      <h1>What If You Bought Bitcoin On Any Day Ever?</h1>
+      <p class="subtitle">Most people think about Bitcoin wrong.<br>They watch the price. They anchor to where they bought. They panic when it falls.<br>But price is the wrong thing to watch.<br>The right question is: "across all of history, what has actually been the probability of coming out ahead?"<br>We calculated every possible outcome — every buy date, every sell date, every combination.</p>
+      <div class="meta-row">
+        <span class="meta-tag"><span class="live-dot"></span>Live data</span>
+        <span class="meta-tag" id="meta-range">—</span>
+        <span class="meta-tag" id="meta-updated">—</span>
+      </div>
+      <div class="tab-bar" style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); flex-direction:row; gap:4px;">
+        <button class="tab-btn active" onclick="switchTab(0)" style="border-left:none; border-bottom:2px solid transparent; padding:0.4rem 0.9rem; border-radius:4px;">01 — Holding period</button>
+        <button class="tab-btn" onclick="switchTab(1)" style="border-left:none; border-bottom:2px solid transparent; padding:0.4rem 0.9rem; border-radius:4px;">02 — Every outcome</button>
+        <button class="tab-btn" onclick="switchTab(2)" style="border-left:none; border-bottom:2px solid transparent; padding:0.4rem 0.9rem; border-radius:4px;">03 — The takeaway</button>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="stats-grid">
+        <!-- Row 1: win/history group + live price -->
+        <div class="stat-cell">
+          <div class="stat-label">Overall win rate</div>
+          <div class="stat-value green" id="stat-overall">—</div>
+          <div class="stat-sub">of all buy/sell pairs</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Days of history</div>
+          <div class="stat-value" id="stat-days">—</div>
+          <div class="stat-sub">every day is a buy date</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Pairs evaluated</div>
+          <div class="stat-value accent" id="stat-pairs">—</div>
+          <div class="stat-sub">buy × sell combinations</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Current price</div>
+          <div class="stat-value" id="stat-price">—</div>
+          <div class="stat-sub" id="stat-price-sub">—</div>
+        </div>
+        <!-- Row 2: downside group + ATH -->
+        <div class="stat-cell">
+          <div class="stat-label">Worst 1-year return</div>
+          <div class="stat-value red" id="stat-worst1y">—</div>
+          <div class="stat-sub" id="stat-worst1y-sub">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Longest losing streak</div>
+          <div class="stat-value red" id="stat-streak">—</div>
+          <div class="stat-sub" id="stat-streak-sub">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Worst drawdown ever</div>
+          <div class="stat-value red" id="stat-drawdown">—</div>
+          <div class="stat-sub" id="stat-drawdown-sub">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">All-time high</div>
+          <div class="stat-value" id="stat-ath">—</div>
+          <div class="stat-sub" id="stat-ath-sub">—</div>
+        </div>
+        <!-- Row 3: upside/patience group + ATH days -->
+        <div class="stat-cell">
+          <div class="stat-label">Best 1-year return</div>
+          <div class="stat-value green" id="stat-best1y">—</div>
+          <div class="stat-sub" id="stat-best1y-sub">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Longest winning streak</div>
+          <div class="stat-value green" id="stat-winstreak">—</div>
+          <div class="stat-sub" id="stat-winstreak-sub">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Worst-case break-even</div>
+          <div class="stat-value" id="stat-breakeven">—</div>
+          <div class="stat-sub">days to recover from worst buy</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Days at new ATH</div>
+          <div class="stat-value" id="stat-athdays">—</div>
+          <div class="stat-sub">of all trading days</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY ROW: sidebar + main -->
+  <div class="body-row">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div id="sidebar-all-content">
+        <div class="section-label" id="sidebar-label">Holding period analysis</div>
+        <div class="section-title" id="sidebar-title">Time converts volatility into probability</div>
+        <div id="sidebar-content-01">
+          <p class="section-body" id="methodology-body">Loading...</p>
+          <div class="insight">
+            <strong>What this shows:</strong><br>
+            For each holding period, the chart answers: if you bought on any random day in Bitcoin's history and held for exactly this long, what fraction of the time would you have been in profit?<br><br>
+            Short-term is noisy — closer to a coin flip. But something shifts around the two-year mark. By three years, losing money becomes historically rare.
+          </div>
+          <div class="insight">
+            <strong>The behavioural gap</strong><br><br>
+            Most retail investors don't lose money because Bitcoin is a bad asset.<br><br>
+            They lose money because they sell during drawdowns — converting a temporary paper loss into a permanent real one.<br><br>
+            The exit made it permanent.
+          </div>
+        </div>
+        <div id="sidebar-content-02" style="display:none;">
+          <p class="section-body">Each cell is a unique buy/sell combination — a week you could have bought paired with a later week you could have sold. <span style="color:#2da05a;">Green</span> means profit. <span style="color:#cc3333;">Red</span> means loss.</p>
+          <div class="insight">
+            <strong>How to read this:</strong><br>
+            X-axis (bottom) = buy date, 2010 at bottom-left, 2026 at bottom-right<br>
+            Y-axis (right) = sell date, 2010 at bottom-right, 2026 at top-right<br>
+            The diagonal runs bottom-left → top-right — buy and sell on the same week.<br>
+            Above the diagonal is the valid data.<br>
+            Below is blank — you cannot sell before you buy.<br>
+            Hover any cell to inspect.
+          </div>
+          <div class="insight">
+            <strong>A note on the data:</strong> ~780 weekly intervals, each using the average closing price across all 7 days in that week. The probability curve in tab 01 uses the full daily dataset.
+          </div>
+          <div class="heatmap-legend" style="margin-top:1rem;">
+            <span>Loss</span><div class="legend-grad"></div><span>Profit</span>
+          </div>
+        </div>
+        <div id="sidebar-content-03" style="display:none;"></div>
+      </div>
+      <div class="tab-bar" style="display:none;">
+        <button class="tab-btn active" onclick="switchTab(0)">01 — Holding period</button>
+        <button class="tab-btn" onclick="switchTab(1)">02 — Every outcome</button>
+        <button class="tab-btn" onclick="switchTab(2)">03 — The takeaway</button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+      <!-- TAB 1: CHART + DATA TABLE -->
+      <div class="tab-panel active" id="tab-0">
+        <div class="chart-wrap">
+          <div class="chart-area" style="height: calc(100vh - 200px); min-height: 300px;">
+            <canvas id="prob-chart"></canvas>
+          </div>
+        </div>
+        <table class="data-table" id="prob-data-table">
+          <thead><tr><th>Row</th></tr></thead>
+          <tbody id="prob-data-body"></tbody>
+        </table>
+      </div>
+
+      <!-- TAB 2: HEATMAP — canvas centered, wrap fits tightly -->
+      <div class="tab-panel" id="tab-1">
+        <div style="display:flex; align-items:flex-start; justify-content:flex-start;">
+          <div class="chart-wrap" style="display:inline-block; padding:0.75rem;">
+            <canvas id="heatmap-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: EDITORIAL TAKEAWAY — left aligned, fits in viewport -->
+      <div class="tab-panel" id="tab-2">
+        <div style="display:flex; flex-direction:column; justify-content:center; flex:1; gap:1.25rem; padding-right:2rem;">
+          <p style="font-family:'Inter',sans-serif; font-size:clamp(16px,1.8vw,22px); line-height:1.65; color:var(--ink-soft); font-weight:300;">Bitcoin has crashed 80% or more — multiple times.<br>Every cycle produced a new wave of people who bought near the top, watched it fall, and sold at the bottom.</p>
+          <p style="font-family:'Inter',sans-serif; font-size:clamp(16px,1.8vw,22px); line-height:1.65; color:var(--ink-soft); font-weight:300;">The data shows this was almost never a problem with Bitcoin.<br>It was a problem with time horizon.<br>The investors who got hurt were not unlucky.<br>They were impatient.</p>
+          <p style="font-family:'Inter',sans-serif; font-size:clamp(16px,1.8vw,22px); line-height:1.65; color:var(--ink); font-weight:400;">Stop asking "what is the price today?"<br>Start asking "what is the probability of being right over my actual time horizon?"</p>
+          <p style="font-family:'Inter',sans-serif; font-size:clamp(16px,1.8vw,22px); line-height:1.65; color:var(--ink-soft); font-weight:300;">The first produces anxiety.<br>The second produces a framework.</p>
+          <p style="font-family:'Inter',sans-serif; font-size:clamp(16px,1.8vw,22px); line-height:1.65; color:var(--ink-soft); font-weight:300;">And that framework leads to the only question that actually matters:<br><span style="color:var(--ink); font-weight:400; font-style:italic;">"What is the right time horizon for me to have to ensure that my Bitcoin holdings are going to be profitable?"</span></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <span>Data: CryptoCompare · Updated on load · <span id="footer-updated">—</span></span>
+    <span>Built by <a href="https://zenca.in" target="_blank">Zenca</a> · <a href="https://buildthisnext.substack.com" target="_blank">BuildThisNext</a> · <a href="https://promptcraftai.substack.com" target="_blank">Promptcraft</a></span>
+  </footer>
+
+</div>
+
+<script>
+const BASE_URL = 'https://min-api.cryptocompare.com/data/v2/histoday';
+const LIMIT = 2000;
+const WEEKLY_SAMPLE = 7;
+
+let priceData = [];
+let weeklyData = [];
+
+let heatmapRendered = false;
+function switchTab(idx) {
+  document.querySelectorAll('.page-header .tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+  ['01','02','03'].forEach((n, i) => {
+    const el = document.getElementById('sidebar-content-' + n);
+    if (el) el.style.display = i === idx ? 'block' : 'none';
+  });
+  const allContent = document.getElementById('sidebar-all-content');
+  if (allContent) allContent.style.display = idx === 2 ? 'none' : 'block';
+  // Update sidebar label and title per tab
+  const labels = ['Holding period analysis', 'Every outcome', ''];
+  const titles = ['Time converts volatility into probability', 'Every buy date. Every sell date. Every outcome.', ''];
+  const lbl = document.getElementById('sidebar-label');
+  const ttl = document.getElementById('sidebar-title');
+  if (lbl) lbl.textContent = labels[idx] || '';
+  if (ttl) ttl.textContent = titles[idx] || '';
+  // Collapse sidebar on tab 3 to give takeaway full width
+  const sidebar = document.querySelector('.sidebar');
+  const bodyRow = document.querySelector('.body-row');
+  if (idx === 2) {
+    bodyRow.style.gridTemplateColumns = '120px 1fr';
+    sidebar.style.padding = '1.25rem 0.75rem';
+  } else {
+    bodyRow.style.gridTemplateColumns = '';
+    sidebar.style.padding = '';
+  }
+  if (idx === 1 && !heatmapRendered) { renderHeatmap(); heatmapRendered = true; }
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('loading-bar').style.width = pct + '%';
+  document.getElementById('loading-status').textContent = msg;
+}
+
+function showError(msg) {
+  const el = document.getElementById('loading-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('loading-status').textContent = 'Failed to load data.';
+}
+
+async function fetchBatch(toTs) {
+  const url = `${BASE_URL}?fsym=BTC&tsym=USD&limit=${LIMIT}&toTs=${toTs}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  if (json.Response === 'Error') throw new Error(json.Message);
+  return json.Data.Data.filter(d => d.close > 0);
+}
+
+async function loadAllData() {
+  setProgress(5, 'Fetching data from 2010 to present...');
+  let allRows = [];
+  let toTs = Math.floor(Date.now() / 1000);
+  let call = 0;
+  const maxCalls = 5;
+
+  while (call < maxCalls) {
+    call++;
+    const pct = 5 + (call / maxCalls) * 55;
+    setProgress(pct, `Fetching batch ${call} of ~${maxCalls}...`);
+    const rows = await fetchBatch(toTs);
+    if (!rows.length) break;
+    allRows = [...rows, ...allRows];
+    const earliest = new Date(rows[0].time * 1000);
+    if (earliest.getFullYear() <= 2010) break;
+    toTs = rows[0].time - 1;
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  // Deduplicate and sort
+  allRows.sort((a, b) => a.time - b.time);
+  const seen = new Set();
+  priceData = allRows.filter(r => {
+    const d = tsToDate(r.time);
+    if (seen.has(d)) return false;
+    seen.add(d); return true;
+  });
+
+  setProgress(65, 'Processing data...');
+}
+
+function tsToDate(ts) {
+  return new Date(ts * 1000).toISOString().split('T')[0];
+}
+
+function fmt(n) {
+  if (n >= 1e3) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  return '$' + n.toFixed(2);
+}
+
+function fmtM(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  return n.toLocaleString();
+}
+
+// Compute probability of profit for a fixed holding period (in days)
+function computeHoldingProbability(days) {
+  let wins = 0, total = 0;
+  const step = days < 30 ? 1 : days < 180 ? 3 : 7;
+  for (let i = 0; i < priceData.length - days; i += step) {
+    const buyPrice = priceData[i].close;
+    const sellIdx = i + days;
+    if (sellIdx >= priceData.length) break;
+    const sellPrice = priceData[sellIdx].close;
+    if (sellPrice > buyPrice) wins++;
+    total++;
+  }
+  return { wins, total, pct: total > 0 ? (wins / total * 100) : 0 };
+}
+
+// Compute global win rate (all pairs, sampled weekly)
+function computeGlobalWinRate() {
+  const data = weeklyData;
+  const n = data.length;
+  let wins = 0, total = 0;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (data[j].close > data[i].close) wins++;
+      total++;
+    }
+  }
+  return total > 0 ? (wins / total * 100) : 0;
+}
+
+function buildWeeklyData() {
+  weeklyData = [];
+  for (let i = 0; i < priceData.length; i += WEEKLY_SAMPLE) {
+    const bucket = priceData.slice(i, i + WEEKLY_SAMPLE);
+    const avgClose = bucket.reduce((sum, d) => sum + d.close, 0) / bucket.length;
+    weeklyData.push({ time: bucket[0].time, close: avgClose });
+  }
+}
+
+function renderStats(globalWinRate) {
+  const n = priceData.length;
+  const latest = priceData[n - 1];
+  const prev = priceData[n - 2];
+  const change = ((latest.close - prev.close) / prev.close * 100);
+  const pairs = Math.round(n * (n - 1) / 2);
+
+  // Compute ATH
+  let athPrice = 0, athIdx = 0;
+  for (let i = 0; i < n; i++) {
+    if (priceData[i].high > athPrice) { athPrice = priceData[i].high; athIdx = i; }
+  }
+  const athDate = tsToDate(priceData[athIdx].time);
+  const daysSinceAth = Math.round((new Date(tsToDate(latest.time)) - new Date(athDate)) / 86400000);
+  const pctFromAth = ((latest.close - athPrice) / athPrice * 100);
+
+  document.getElementById('stat-overall').textContent = globalWinRate.toFixed(1) + '%';
+  document.getElementById('stat-days').textContent = n.toLocaleString();
+  document.getElementById('stat-pairs').textContent = fmtM(pairs);
+  document.getElementById('stat-price').textContent = fmt(latest.close);
+  document.getElementById('stat-price-sub').textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '% today';
+  document.getElementById('stat-ath').textContent = fmt(athPrice);
+  document.getElementById('stat-ath-sub').textContent = daysSinceAth === 0 ? 'Today — new ATH' : athDate + ' · ' + pctFromAth.toFixed(1) + '% from there';
+
+  // Longest consecutive losing streak (close < prev close)
+  let streak = 0, maxStreak = 0, streakEnd = 0;
+  let curStreak = 0;
+  for (let i = 1; i < n; i++) {
+    if (priceData[i].close < priceData[i-1].close) {
+      curStreak++;
+      if (curStreak > maxStreak) { maxStreak = curStreak; streakEnd = i; }
+    } else curStreak = 0;
+  }
+  document.getElementById('stat-streak').textContent = maxStreak + ' days';
+  document.getElementById('stat-streak-sub').textContent = 'ended ' + tsToDate(priceData[streakEnd].time);
+
+  // Longest consecutive winning streak (close > prev close)
+  let winStreak = 0, maxWinStreak = 0, winStreakEnd = 0;
+  let curWinStreak = 0;
+  for (let i = 1; i < n; i++) {
+    if (priceData[i].close > priceData[i-1].close) {
+      curWinStreak++;
+      if (curWinStreak > maxWinStreak) { maxWinStreak = curWinStreak; winStreakEnd = i; }
+    } else curWinStreak = 0;
+  }
+  document.getElementById('stat-winstreak').textContent = maxWinStreak + ' days';
+  document.getElementById('stat-winstreak-sub').textContent = 'ended ' + tsToDate(priceData[winStreakEnd].time);
+
+  // Worst drawdown ever: max peak-to-trough decline
+  let peak = priceData[0].close, worstDD = 0, worstDDDate = '';
+  for (let i = 1; i < n; i++) {
+    if (priceData[i].close > peak) { peak = priceData[i].close; }
+    const dd = (priceData[i].close - peak) / peak * 100;
+    if (dd < worstDD) { worstDD = dd; worstDDDate = tsToDate(priceData[i].time); }
+  }
+  document.getElementById('stat-drawdown').textContent = worstDD.toFixed(1) + '%';
+  document.getElementById('stat-drawdown-sub').textContent = 'trough on ' + worstDDDate;
+
+  // Best and worst 1-year (365-day) return
+  let best1y = -Infinity, worst1y = Infinity;
+  let best1yBuy = '', worst1yBuy = '';
+  for (let i = 0; i < n - 365; i++) {
+    const ret = (priceData[i + 365].close - priceData[i].close) / priceData[i].close * 100;
+    if (ret > best1y) { best1y = ret; best1yBuy = tsToDate(priceData[i].time); }
+    if (ret < worst1y) { worst1y = ret; worst1yBuy = tsToDate(priceData[i].time); }
+  }
+  document.getElementById('stat-best1y').textContent = '+' + best1y.toFixed(0) + '%';
+  document.getElementById('stat-best1y-sub').textContent = 'bought ' + best1yBuy;
+  document.getElementById('stat-worst1y').textContent = worst1y.toFixed(0) + '%';
+  document.getElementById('stat-worst1y-sub').textContent = 'bought ' + worst1yBuy;
+
+  // Worst-case break-even: for each buy date, find days until price recovered above buy price
+  let maxBreakEven = 0;
+  for (let i = 0; i < n; i++) {
+    const buyPrice = priceData[i].close;
+    let recovered = false;
+    for (let j = i + 1; j < n; j++) {
+      if (priceData[j].close >= buyPrice) {
+        const days = j - i;
+        if (days > maxBreakEven) maxBreakEven = days;
+        recovered = true;
+        break;
+      }
+    }
+  }
+  document.getElementById('stat-breakeven').textContent = maxBreakEven.toLocaleString() + ' days';
+
+  // Days at new ATH (each day where close > all previous closes)
+  let runningMax = 0, athDays = 0;
+  for (let i = 0; i < n; i++) {
+    if (priceData[i].close > runningMax) { runningMax = priceData[i].close; athDays++; }
+  }
+  document.getElementById('stat-athdays').textContent = ((athDays / n) * 100).toFixed(1) + '%';
+
+  const first = priceData[0];
+  const last = priceData[n - 1];
+  const firstDate = tsToDate(first.time);
+  const lastDate = tsToDate(last.time);
+  document.getElementById('meta-range').textContent = firstDate + ' → ' + lastDate;
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  document.getElementById('meta-updated').textContent = 'Updated ' + now + ' IST';
+  document.getElementById('footer-updated').textContent = now + ' IST';
+
+  const pairsFormatted = pairs.toLocaleString();
+  document.getElementById('methodology-body').innerHTML =
+    `We collected daily closing prices starting <strong>${firstDate}</strong> — the earliest date Bitcoin traded on any exchange — through <strong>${lastDate}</strong>. That is <strong>${n.toLocaleString()} days</strong> of data.<br><br>` +
+    `For each of those days as a potential buy date, we evaluated every later date as a potential sell date. In total, that is <strong>${pairsFormatted} unique buy/sell pairs</strong> — every possible outcome for every possible investor, across Bitcoin's entire history.<br><br>` +
+    `For each pair, one question: "Did the price go up?"<br>We counted the wins.`;
+}
+
+function renderProbChart(periods) {
+  const labels = periods.map(p => p.label);
+  const values = periods.map(p => parseFloat(p.result.pct.toFixed(1)));
+
+  // 10 discrete shades: 5 orange (0-49%) and 5 green (50-100%), stepped every 10%
+  const orangeShades = ['#6b2d0a','#8c3d10','#b34e18','#d96022','#e8752e'];
+  const greenShades  = ['#1a4d2e','#1f6b38','#228b44','#25a84f','#27c45c'];
+  const bgColors = values.map(v => {
+    if (v < 50) {
+      const idx = Math.min(4, Math.floor(v / 10)); // 0-9%→0, 10-19%→1 ... 40-49%→4
+      return orangeShades[idx];
+    } else {
+      const idx = Math.min(4, Math.floor((v - 50) / 10)); // 50-59%→0 ... 90-100%→4
+      return greenShades[idx];
+    }
+  });
+
+  const ctx = document.getElementById('prob-chart').getContext('2d');
+
+  const labelInsidePlugin = {
+    id: 'labelInside',
+    afterDatasetsDraw(chart) {
+      const { ctx, data, scales } = chart;
+      ctx.save();
+      data.datasets[0].data.forEach((val, i) => {
+        const bar = chart.getDatasetMeta(0).data[i];
+        const x = bar.x;
+        const y = bar.y + 14;
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = '500 10px DM Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(val.toFixed(1) + '%', x, y);
+      });
+      ctx.restore();
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'bar',
+    plugins: [labelInsidePlugin],
+    data: {
+      labels,
+      datasets: [
+        {
+          data: values,
+          backgroundColor: bgColors,
+          borderRadius: 3,
+          borderSkipped: false,
+        },
+        {
+          data: Array(labels.length).fill(50),
+          type: 'line',
+          borderColor: 'rgba(255,255,255,0.2)',
+          borderWidth: 1,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          filter: item => item.datasetIndex === 0,
+          callbacks: {
+            title: ctx => {
+              const label = periods[ctx[0].dataIndex].label;
+              const days = periods[ctx[0].dataIndex].days;
+              return `${label} (${days} day${days > 1 ? 's' : ''})`;
+            },
+            label: ctx => ctx.parsed.y.toFixed(1) + '% of buyers were in profit'
+          },
+          backgroundColor: '#0a0a0a',
+          titleColor: '#f0eeea',
+          bodyColor: '#b0ada6',
+          borderColor: 'rgba(255,255,255,0.12)',
+          borderWidth: 1,
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'DM Mono', size: 10 },
+            color: '#6a6760',
+            maxRotation: 45,
+            autoSkip: false,
+          }
+        },
+        y: {
+          min: 0, max: 100,
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          ticks: {
+            font: { family: 'DM Mono', size: 11 },
+            color: '#6a6760',
+            callback: v => v + '%'
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderProbTable(periods) {
+  const fullLabel = p => p.label;
+
+  // Compact 2-row data table: Wins and Outcomes, one column per period
+  const tbody = document.getElementById('prob-data-body');
+  const colTds = periods.map(p => `<td>${p.result.wins.toLocaleString()}</td>`).join('');
+  const totalTds = periods.map(p => `<td>${p.result.total.toLocaleString()}</td>`).join('');
+  tbody.innerHTML =
+    `<tr><td class="row-label">Wins</td>${colTds}<td class="spacer-col"></td></tr>` +
+    `<tr><td class="row-label">Outcomes</td>${totalTds}<td class="spacer-col"></td></tr>`;
+
+  // Build a header row matching the chart columns
+  const headRow = document.querySelector('#prob-data-table thead tr');
+  headRow.innerHTML = `<th>Row</th>` + periods.map(p => `<th>${fullLabel(p)}</th>`).join('') + `<th class="spacer-col"></th>`;
+
+  // Takeaway table — key milestones only
+  const keyLabels = ['1W','1M','1Q','1Y','2Y','4Y','6Y'];
+  const keyPeriods = periods.filter(p => keyLabels.includes(p.label));
+  const ttbody = document.getElementById('takeaway-table-body');
+  if (!ttbody) return;
+  ttbody.innerHTML = keyPeriods.map(p => {
+    const pct = p.result.pct;
+    const cls = pct >= 70 ? 'high' : pct >= 50 ? 'mid' : 'low';
+    const barW = Math.round(pct);
+    return `<tr>
+      <td style="color:var(--ink-soft);">${fullLabel(p)}</td>
+      <td><div class="prob-bar-bg" style="width:100px;"><div class="prob-bar-fill" style="width:${barW}%"></div></div></td>
+      <td><span class="prob-pct ${cls}">${pct.toFixed(1)}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderHeatmap() {
+  const canvas = document.getElementById('heatmap-canvas');
+  const data = weeklyData;
+  const n = data.length;
+  const size = Math.min(n, 200);
+  const step = Math.floor(n / size);
+  const sampled = [];
+  for (let i = 0; i < size; i++) sampled.push(data[Math.min(i * step, n - 1)]);
+
+  // X = buy date index (col), left→right = 2010→2026
+  // Y = sell date index (row), bottom→top = 2010→2026
+  // Valid: sell > buy → j > i
+  // Canvas row 0 is top, so sell index j maps to canvas row (size - 1 - j)
+  // Valid region: upper-left triangle (canvas rows 0..size-1-i-1 for col i)
+
+  const MARGIN_LEFT = 42;
+  const MARGIN_TOP = 38;
+  const MARGIN_BOTTOM = 42;
+  const MARGIN_RIGHT = 70;
+
+  const dim = Math.min(window.innerWidth - 80, 820);
+  const cellSize = Math.max(2, Math.floor((dim - MARGIN_LEFT - MARGIN_RIGHT) / size));
+  const gridSize = cellSize * size;
+  const totalW = MARGIN_LEFT + gridSize + MARGIN_RIGHT;
+  const totalH = MARGIN_TOP + gridSize + MARGIN_BOTTOM;
+
+  canvas.width = totalW;
+  canvas.height = totalH;
+  canvas.style.width = '50%';
+  canvas.style.height = 'auto';
+  canvas.style.display = 'block';
+
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#1c1b19';
+  ctx.fillRect(0, 0, totalW, totalH);
+
+  // Buy on X-axis: B10 at BL, B26 at BR — buy index i increases rightward
+  // canvas x = MARGIN_LEFT + i * cellSize
+  // Sell on Y-axis (right): S10 at BR, S26 at TR — sell index j increases upward
+  // canvas y = MARGIN_TOP + (size - 1 - j) * cellSize
+  // Valid: sell date > buy date → j > i
+  for (let i = 0; i < size; i++) {
+    for (let j = i + 1; j < size; j++) {
+      const buyPrice = sampled[i].close;
+      const sellPrice = sampled[j].close;
+      const ret = (sellPrice - buyPrice) / buyPrice;
+      const clamped = Math.max(-1, Math.min(1, ret));
+      let r, g, b;
+      if (clamped >= 0) {
+        const t = Math.sqrt(clamped);
+        r = Math.round(40 * (1 - t) + 30 * t);
+        g = Math.round(40 * (1 - t) + 160 * t);
+        b = Math.round(40 * (1 - t) + 80 * t);
+      } else {
+        const t = Math.sqrt(-clamped);
+        r = Math.round(40 * (1 - t) + 200 * t);
+        g = Math.round(40 * (1 - t) + 40 * t);
+        b = Math.round(40 * (1 - t) + 40 * t);
+      }
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      const canvasX = MARGIN_LEFT + i * cellSize;
+      const canvasY = MARGIN_TOP + (size - 1 - j) * cellSize;
+      ctx.fillRect(canvasX, canvasY, cellSize, cellSize);
+    }
+  }
+
+  ctx.font = '10px DM Mono, monospace';
+  const labelEvery = Math.floor(size / 7);
+
+  // BOTTOM — buy year labels (B10-BL → B26-BR)
+  for (let i = 0; i < size; i += labelEvery) {
+    const yr = new Date(sampled[i].time * 1000).getFullYear();
+    ctx.fillStyle = 'rgba(160,157,150,0.75)';
+    ctx.textAlign = 'center';
+    ctx.fillText(yr, MARGIN_LEFT + i * cellSize + cellSize / 2, MARGIN_TOP + gridSize + 14);
+  }
+
+  // TOP — buy year labels mirrored (B10-TL → B26-TR), dimmed
+  for (let i = 0; i < size; i += labelEvery) {
+    const yr = new Date(sampled[i].time * 1000).getFullYear();
+    ctx.fillStyle = 'rgba(160,157,150,0.45)';
+    ctx.textAlign = 'center';
+    ctx.fillText(yr, MARGIN_LEFT + i * cellSize + cellSize / 2, MARGIN_TOP - 4);
+  }
+
+  // RIGHT — sell year labels (S10-BR → S26-TR)
+  for (let j = 0; j < size; j += labelEvery) {
+    const yr = new Date(sampled[j].time * 1000).getFullYear();
+    const canvasY = MARGIN_TOP + (size - 1 - j) * cellSize + cellSize / 2 + 3;
+    ctx.fillStyle = 'rgba(160,157,150,0.75)';
+    ctx.textAlign = 'left';
+    ctx.fillText(yr, MARGIN_LEFT + gridSize + 5, canvasY);
+  }
+
+  // LEFT — sell year labels mirrored, dimmed
+  for (let j = 0; j < size; j += labelEvery) {
+    const yr = new Date(sampled[j].time * 1000).getFullYear();
+    const canvasY = MARGIN_TOP + (size - 1 - j) * cellSize + cellSize / 2 + 3;
+    ctx.fillStyle = 'rgba(160,157,150,0.45)';
+    ctx.textAlign = 'right';
+    ctx.fillText(yr, MARGIN_LEFT - 5, canvasY);
+  }
+
+  // BOTTOM axis title — BUY DATE
+  ctx.fillStyle = 'rgba(110,107,100,0.85)';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('BUY DATE →', MARGIN_LEFT + gridSize / 2, MARGIN_TOP + gridSize + 28);
+
+  // TOP axis title — BUY DATE mirrored, dimmed
+  ctx.fillStyle = 'rgba(110,107,100,0.45)';
+  ctx.textAlign = 'center';
+  ctx.fillText('BUY DATE →', MARGIN_LEFT + gridSize / 2, 11);
+
+  // RIGHT axis title — SELL DATE rotated, anchored 54px from grid edge
+  ctx.save();
+  ctx.translate(MARGIN_LEFT + gridSize + 54, MARGIN_TOP + gridSize / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.fillStyle = 'rgba(110,107,100,0.85)';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SELL DATE →', 0, 0);
+  ctx.restore();
+
+  // LEFT axis title — SELL DATE rotated, dimmed
+  ctx.save();
+  ctx.translate(11, MARGIN_TOP + gridSize / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(110,107,100,0.45)';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SELL DATE →', 0, 0);
+  ctx.restore();
+
+  // Hover tooltip
+  const tooltip = document.getElementById('tooltip');
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const px = (e.clientX - rect.left) * scaleX;
+    const py = (e.clientY - rect.top) * scaleY;
+    const buyIdx = Math.floor((px - MARGIN_LEFT) / cellSize);
+    const sellIdx = size - 1 - Math.floor((py - MARGIN_TOP) / cellSize);
+    if (buyIdx < 0 || sellIdx < 0 || buyIdx >= size || sellIdx >= size || sellIdx <= buyIdx) {
+      tooltip.style.display = 'none';
+      return;
+    }
+    const buyDate = tsToDate(sampled[buyIdx].time);
+    const sellDate = tsToDate(sampled[sellIdx].time);
+    const buyPrice = sampled[buyIdx].close;
+    const sellPrice = sampled[sellIdx].close;
+    const ret = ((sellPrice - buyPrice) / buyPrice * 100);
+    const sign = ret >= 0 ? '+' : '';
+    tooltip.innerHTML = `Buy: ${buyDate} @ ${fmt(buyPrice)}<br>Sell: ${sellDate} @ ${fmt(sellPrice)}<br>Return: ${sign}${ret.toFixed(1)}%`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top = (e.clientY - 10) + 'px';
+  });
+  canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+}
+
+async function init() {
+  try {
+    await loadAllData();
+
+    setProgress(70, 'Building weekly series...');
+    buildWeeklyData();
+
+    setProgress(75, 'Computing holding period probabilities...');
+    const periods = [
+      { label: '1D',  days: 1   },
+      { label: '2D',  days: 2   },
+      { label: '3D',  days: 3   },
+      { label: '4D',  days: 4   },
+      { label: '5D',  days: 5   },
+      { label: '6D',  days: 6   },
+      { label: '1W',  days: 7   },
+      { label: '2W',  days: 14  },
+      { label: '3W',  days: 21  },
+      { label: '4W',  days: 28  },
+      { label: '1M',  days: 30  },
+      { label: '2M',  days: 60  },
+      { label: '1Q',  days: 91  },
+      { label: '4M',  days: 120 },
+      { label: '5M',  days: 150 },
+      { label: '2Q',  days: 182 },
+      { label: '7M',  days: 210 },
+      { label: '8M',  days: 240 },
+      { label: '3Q',  days: 273 },
+      { label: '10M', days: 300 },
+      { label: '11M', days: 330 },
+      { label: '1Y',  days: 365 },
+      { label: '2Y',  days: 730 },
+      { label: '3Y',  days: 1095},
+      { label: '4Y',  days: 1460},
+      { label: '5Y',  days: 1825},
+      { label: '6Y',  days: 2190},
+    ];
+    for (const p of periods) {
+      p.result = computeHoldingProbability(p.days);
+    }
+
+    setProgress(85, 'Computing global win rate...');
+    const globalWinRate = computeGlobalWinRate();
+
+    setProgress(90, 'Rendering charts...');
+    renderStats(globalWinRate);
+    renderProbChart(periods);
+    renderProbTable(periods);
+
+    setProgress(100, 'Done');
+    await new Promise(r => setTimeout(r, 400));
+
+    document.getElementById('main-page').style.display = 'block';
+    document.getElementById('loading-screen').classList.add('fade-out');
+    setTimeout(() => {
+      document.getElementById('loading-screen').style.display = 'none';
+    }, 700);
+
+  } catch(e) {
+    showError('Could not load data: ' + e.message + '. Please check your connection and refresh.');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
