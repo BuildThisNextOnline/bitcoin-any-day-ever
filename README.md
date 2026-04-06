@@ -1,6 +1,6 @@
 # What If You Bought Bitcoin On Any Day Ever?
 
-**Live dashboard → [buildthisnext.github.io/bitcoin-any-day-ever](https://buildthisnext.github.io/bitcoin-any-day-ever)**
+**Live dashboard → [buildthisnextonline.github.io/bitcoin-any-day-ever](https://buildthisnextonline.github.io/bitcoin-any-day-ever)**
 
 Built by [Zenca](https://zenca.global) · [BuildThisNext](https://buildthisnext.substack.com) · [Promptcraft](https://promptcraftai.substack.com)
 
