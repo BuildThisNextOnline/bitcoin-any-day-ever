@@ -2,7 +2,7 @@
 
 **Live dashboard → [buildthisnext.github.io/bitcoin-any-day-ever](https://buildthisnext.github.io/bitcoin-any-day-ever)**
 
-Built by [Zenca](https://zenca.in) · [BuildThisNext](https://buildthisnext.substack.com) · [Promptcraft](https://promptcraftai.substack.com)
+Built by [Zenca](https://zenca.global) · [BuildThisNext](https://buildthisnext.substack.com) · [Promptcraft](https://promptcraftai.substack.com)
 
 ---
 
