@@ -392,8 +392,6 @@
     .tab-btn.active { border-bottom-color: var(--accent); background: none; }
   }
 </style>
-<script data-goatcounter="https://btnonline-bitcoin-any-day-ever.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 
@@ -593,8 +591,7 @@
 </div>
 
 <script>
-const BASE_URL = 'https://min-api.cryptocompare.com/data/v2/histoday';
-const LIMIT = 2000;
+const COINGECKO_KEY = 'CG-yezDryocfugJLa6LnLvneuo4';
 const WEEKLY_SAMPLE = 7;
 
 let priceData = [];
@@ -642,43 +639,26 @@ function showError(msg) {
   document.getElementById('loading-status').textContent = 'Failed to load data.';
 }
 
-async function fetchBatch(toTs) {
-  const url = `${BASE_URL}?fsym=BTC&tsym=USD&limit=${LIMIT}&toTs=${toTs}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const json = await res.json();
-  if (json.Response === 'Error') throw new Error(json.Message);
-  return json.Data.Data.filter(d => d.close > 0);
-}
-
 async function loadAllData() {
-  setProgress(5, 'Fetching data from 2010 to present...');
-  let allRows = [];
-  let toTs = Math.floor(Date.now() / 1000);
-  let call = 0;
-  const maxCalls = 5;
-
-  while (call < maxCalls) {
-    call++;
-    const pct = 5 + (call / maxCalls) * 55;
-    setProgress(pct, `Fetching batch ${call} of ~${maxCalls}...`);
-    const rows = await fetchBatch(toTs);
-    if (!rows.length) break;
-    allRows = [...rows, ...allRows];
-    const earliest = new Date(rows[0].time * 1000);
-    if (earliest.getFullYear() <= 2010) break;
-    toTs = rows[0].time - 1;
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  // Deduplicate and sort
-  allRows.sort((a, b) => a.time - b.time);
-  const seen = new Set();
-  priceData = allRows.filter(r => {
-    const d = tsToDate(r.time);
-    if (seen.has(d)) return false;
-    seen.add(d); return true;
+  setProgress(5, 'Fetching Bitcoin price history...');
+  const url = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=max&interval=daily';
+  const res = await fetch(url, {
+    headers: { 'x-cg-demo-api-key': COINGECKO_KEY }
   });
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' from CoinGecko');
+  const json = await res.json();
+
+  // CoinGecko returns { prices: [[timestamp_ms, price], ...], ... }
+  const seen = new Set();
+  priceData = json.prices
+    .filter(([ts, price]) => price > 0)
+    .map(([ts, price]) => ({ time: Math.floor(ts / 1000), close: price }))
+    .filter(r => {
+      const d = tsToDate(r.time);
+      if (seen.has(d)) return false;
+      seen.add(d); return true;
+    })
+    .sort((a, b) => a.time - b.time);
 
   setProgress(65, 'Processing data...');
 }
