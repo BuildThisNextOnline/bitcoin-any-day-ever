@@ -392,6 +392,7 @@
     .tab-btn.active { border-bottom-color: var(--accent); background: none; }
   }
 </style>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIj4KICA8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIGZpbGw9IiMxMTExMTEiLz4KICA8cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMjdjNDVjIi8+CiAgPHJlY3QgeD0iNiIgeT0iMSIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzI1YTg0ZiIvPgogIDxyZWN0IHg9IjExIiB5PSIxIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMjVhODRmIi8+CiAgPHJlY3QgeD0iMTYiIHk9IjEiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMxZjZiMzgiLz4KICA8cmVjdCB4PSIyMSIgeT0iMSIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzFmNmIzOCIvPgogIDxyZWN0IHg9IjI2IiB5PSIxIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMjdjNDVjIi8+CiAgPHJlY3QgeD0iMSIgeT0iNiIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzI3YzQ1YyIvPgogIDxyZWN0IHg9IjYiIHk9IjYiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMyNWE4NGYiLz4KICA8cmVjdCB4PSIxMSIgeT0iNiIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzFmNmIzOCIvPgogIDxyZWN0IHg9IjE2IiB5PSI2IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMWY2YjM4Ii8+CiAgPHJlY3QgeD0iMjEiIHk9IjYiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNjYzMzMzMiLz4KICA8cmVjdCB4PSIxIiB5PSIxMSIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzI1YTg0ZiIvPgogIDxyZWN0IHg9IjYiIHk9IjExIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMWY2YjM4Ii8+CiAgPHJlY3QgeD0iMTEiIHk9IjExIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjY2MzMzMzIi8+CiAgPHJlY3QgeD0iMTYiIHk9IjExIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjYjAyMDIwIi8+CiAgPHJlY3QgeD0iMSIgeT0iMTYiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMxZjZiMzgiLz4KICA8cmVjdCB4PSI2IiB5PSIxNiIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iI2NjMzMzMyIvPgogIDxyZWN0IHg9IjExIiB5PSIxNiIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzI1YTg0ZiIvPgogIDxyZWN0IHg9IjEiIHk9IjIxIiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMWE0ZDJlIi8+CiAgPHJlY3QgeD0iNiIgeT0iMjEiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMyNWE4NGYiLz4KICA8cmVjdCB4PSIxIiB5PSIyNiIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzFhNGQyZSIvPgogIDxsaW5lIHgxPSIwIiB5MT0iMzIiIHgyPSIzMiIgeTI9IjAiIHN0cm9rZT0iIzQ0NCIgc3Ryb2tlLXdpZHRoPSIwLjUiLz4KPC9zdmc+">
 </head>
 <body>
 
@@ -1023,7 +1024,7 @@ function renderHeatmap() {
     }
   }
 
-  ctx.font = '10px DM Mono, monospace';
+  ctx.font = '20px DM Mono, monospace';
   const labelEvery = Math.floor(size / 7);
 
   // BOTTOM — buy year labels (B10-BL → B26-BR)
@@ -1062,7 +1063,7 @@ function renderHeatmap() {
 
   // BOTTOM axis title — BUY DATE
   ctx.fillStyle = 'rgba(110,107,100,0.85)';
-  ctx.font = '10px DM Mono, monospace';
+  ctx.font = '20px DM Mono, monospace';
   ctx.textAlign = 'center';
   ctx.fillText('BUY DATE →', MARGIN_LEFT + gridSize / 2, MARGIN_TOP + gridSize + 28);
 
@@ -1076,7 +1077,7 @@ function renderHeatmap() {
   ctx.translate(MARGIN_LEFT + gridSize + 54, MARGIN_TOP + gridSize / 2);
   ctx.rotate(Math.PI / 2);
   ctx.fillStyle = 'rgba(110,107,100,0.85)';
-  ctx.font = '10px DM Mono, monospace';
+  ctx.font = '20px DM Mono, monospace';
   ctx.textAlign = 'center';
   ctx.fillText('SELL DATE →', 0, 0);
   ctx.restore();
@@ -1086,7 +1087,7 @@ function renderHeatmap() {
   ctx.translate(11, MARGIN_TOP + gridSize / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.fillStyle = 'rgba(110,107,100,0.45)';
-  ctx.font = '10px DM Mono, monospace';
+  ctx.font = '20px DM Mono, monospace';
   ctx.textAlign = 'center';
   ctx.fillText('SELL DATE →', 0, 0);
   ctx.restore();
