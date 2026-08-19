@@ -591,6 +591,7 @@
 </div>
 
 <script>
+const COINGECKO_KEY = 'CG-yezDryocfugJLa6LnLvneuo4';
 const WEEKLY_SAMPLE = 7;
 
 let priceData = [];
@@ -639,16 +640,19 @@ function showError(msg) {
 }
 
 async function loadAllData() {
-  setProgress(5, 'Loading Bitcoin price data...');
-  const res = await fetch('btc_data.json');
-  if (!res.ok) throw new Error('Could not load btc_data.json (HTTP ' + res.status + ')');
+  setProgress(5, 'Fetching Bitcoin price history...');
+  const url = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=max&interval=daily';
+  const res = await fetch(url, {
+    headers: { 'x-cg-demo-api-key': COINGECKO_KEY }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' from CoinGecko');
   const json = await res.json();
 
-  if (!json.rows || !json.rows.length) throw new Error('btc_data.json is empty or malformed');
-
+  // CoinGecko returns { prices: [[timestamp_ms, price], ...], ... }
   const seen = new Set();
-  priceData = json.rows
-    .filter(r => r.close > 0)
+  priceData = json.prices
+    .filter(([ts, price]) => price > 0)
+    .map(([ts, price]) => ({ time: Math.floor(ts / 1000), close: price }))
     .filter(r => {
       const d = tsToDate(r.time);
       if (seen.has(d)) return false;
@@ -722,7 +726,7 @@ function renderStats(globalWinRate) {
   // Compute ATH
   let athPrice = 0, athIdx = 0;
   for (let i = 0; i < n; i++) {
-    if (priceData[i].high > athPrice) { athPrice = priceData[i].high; athIdx = i; }
+    if (priceData[i].close > athPrice) { athPrice = priceData[i].close; athIdx = i; }
   }
   const athDate = tsToDate(priceData[athIdx].time);
   const daysSinceAth = Math.round((new Date(tsToDate(latest.time)) - new Date(athDate)) / 86400000);
