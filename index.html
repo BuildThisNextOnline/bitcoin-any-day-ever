@@ -962,10 +962,8 @@ function renderHeatmap() {
   const canvas = document.getElementById('heatmap-canvas');
   const data = weeklyData;
   const n = data.length;
-  const size = Math.min(n, 200);
-  const step = Math.floor(n / size);
-  const sampled = [];
-  for (let i = 0; i < size; i++) sampled.push(data[Math.min(i * step, n - 1)]);
+  const size = n;
+  const sampled = data.slice();
 
   // X = buy date index (col), left→right = 2010→2026
   // Y = sell date index (row), bottom→top = 2010→2026
@@ -986,8 +984,7 @@ function renderHeatmap() {
 
   canvas.width = totalW;
   canvas.height = totalH;
-  canvas.style.width = '50%';
-  canvas.style.height = 'auto';
+  canvas.style.maxWidth = '100%';
   canvas.style.display = 'block';
 
   const ctx = canvas.getContext('2d');
