@@ -984,7 +984,8 @@ function renderHeatmap() {
 
   canvas.width = totalW;
   canvas.height = totalH;
-  canvas.style.maxWidth = '100%';
+  canvas.style.height = 'calc(100vh - 280px)';
+  canvas.style.width = 'auto';
   canvas.style.display = 'block';
 
   const ctx = canvas.getContext('2d');
